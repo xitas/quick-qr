@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick QR — QR Code Generator</title>
+  <meta name="description" content="Generate QR codes for links, text, WiFi, phone numbers, email and contact cards. Free, private, runs in your browser.">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    // Apply the saved theme before first paint so there's no flash of the wrong theme.
+    (function () {
+      try {
+        var t = localStorage.getItem('quickqr-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M6 6h1v1H6zM17 6h1v1h-1zM6 17h1v1H6zM14 14h3v3h-3zM18 18h3v3h-3zM18 14h3v2h-3zM14 18h2v3h-2z" fill="currentColor"/>
+      </svg>
+      <span>Quick QR</span>
+    </div>
+    <button id="themeToggle" class="icon-btn" type="button" aria-label="Switch to dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <main id="main" class="card">
+    <!-- Left column: type tabs, inputs, appearance -->
+    <section class="form-col" aria-labelledby="formHeading">
+      <h1 id="formHeading">Create a QR code</h1>
+
+      <div class="tabs" role="tablist" aria-label="QR code type">
+        <button type="button" role="tab" id="tab-text" data-type="text" aria-selected="true" aria-controls="panel-text">Text / URL</button>
+        <button type="button" role="tab" id="tab-wifi" data-type="wifi" aria-selected="false" aria-controls="panel-wifi" tabindex="-1">WiFi</button>
+        <button type="button" role="tab" id="tab-phone" data-type="phone" aria-selected="false" aria-controls="panel-phone" tabindex="-1">Phone</button>
+        <button type="button" role="tab" id="tab-email" data-type="email" aria-selected="false" aria-controls="panel-email" tabindex="-1">Email</button>
+        <button type="button" role="tab" id="tab-vcard" data-type="vcard" aria-selected="false" aria-controls="panel-vcard" tabindex="-1">Contact</button>
+      </div>
+
+      <form id="qrForm" novalidate autocomplete="off">
+        <div class="panel" role="tabpanel" id="panel-text" data-type="text" aria-labelledby="tab-text">
+          <div class="field">
+            <label for="text-content">Text or URL</label>
+            <textarea id="text-content" name="content" rows="4" placeholder="https://example.com" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="panel" role="tabpanel" id="panel-wifi" data-type="wifi" aria-labelledby="tab-wifi" hidden>
+          <div class="field">
+            <label for="wifi-ssid">Network name (SSID)</label>
+            <input id="wifi-ssid" name="ssid" type="text" placeholder="My Home WiFi" spellcheck="false">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="wifi-security">Security</label>
+              <select id="wifi-security" name="security">
+                <option value="WPA">WPA / WPA2 / WPA3</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">None (open)</option>
+              </select>
+            </div>
+            <div class="field grow">
+              <label for="wifi-password">Password</label>
+              <div class="input-with-btn">
+                <input id="wifi-password" name="password" type="password" spellcheck="false" autocomplete="off">
+                <button id="togglePassword" type="button" class="inline-btn" aria-pressed="false" aria-controls="wifi-password">Show</button>
+              </div>
+            </div>
+          </div>
+          <label class="check">
+            <input id="wifi-hidden" name="hidden" type="checkbox">
+            <span>Hidden network</span>
+          </label>
+        </div>
+
+        <div class="panel" role="tabpanel" id="panel-phone" data-type="phone" aria-labelledby="tab-phone" hidden>
+          <div class="field">
+            <label for="phone-number">Phone number</label>
+            <input id="phone-number" name="phone" type="tel" placeholder="+1 555 123 4567" inputmode="tel">
+          </div>
+        </div>
+
+        <div class="panel" role="tabpanel" id="panel-email" data-type="email" aria-labelledby="tab-email" hidden>
+          <div class="field">
+            <label for="email-address">Email address</label>
+            <input id="email-address" name="email" type="email" placeholder="name@example.com" inputmode="email" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="email-subject">Subject <span class="optional">(optional)</span></label>
+            <input id="email-subject" name="subject" type="text">
+          </div>
+          <div class="field">
+            <label for="email-body">Message <span class="optional">(optional)</span></label>
+            <textarea id="email-body" name="body" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="panel" role="tabpanel" id="panel-vcard" data-type="vcard" aria-labelledby="tab-vcard" hidden>
+          <div class="field-row">
+            <div class="field grow">
+              <label for="vcard-first">First name</label>
+              <input id="vcard-first" name="first" type="text">
+            </div>
+            <div class="field grow">
+              <label for="vcard-last">Last name</label>
+              <input id="vcard-last" name="last" type="text">
+            </div>
+          </div>
+          <div class="field">
+            <label for="vcard-phone">Phone <span class="optional">(optional)</span></label>
+            <input id="vcard-phone" name="phone" type="tel" inputmode="tel">
+          </div>
+          <div class="field">
+            <label for="vcard-email">Email <span class="optional">(optional)</span></label>
+            <input id="vcard-email" name="email" type="email" inputmode="email" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="vcard-company">Company <span class="optional">(optional)</span></label>
+            <input id="vcard-company" name="company" type="text">
+          </div>
+        </div>
+
+        <p id="formMessage" class="message" role="status" aria-live="polite"></p>
+
+        <fieldset class="appearance">
+          <legend>Appearance</legend>
+
+          <div class="field-row">
+            <div class="field color-field">
+              <label for="fgColor">Foreground</label>
+              <div class="color-input">
+                <input id="fgColor" type="color" value="#000000">
+                <span id="fgValue" class="mono" aria-hidden="true">#000000</span>
+              </div>
+            </div>
+            <div class="field color-field">
+              <label for="bgColor">Background</label>
+              <div class="color-input">
+                <input id="bgColor" type="color" value="#ffffff">
+                <span id="bgValue" class="mono" aria-hidden="true">#ffffff</span>
+              </div>
+            </div>
+          </div>
+          <p id="contrastWarning" class="message" data-kind="warn" role="status" aria-live="polite"></p>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="sizeRange">Size</label>
+              <output id="sizeOutput" for="sizeRange" class="mono">512 px</output>
+            </div>
+            <input id="sizeRange" type="range" min="128" max="1024" step="32" value="512">
+          </div>
+
+          <fieldset class="field ecl">
+            <legend>
+              Error correction
+              <span class="tip-wrap">
+                <button type="button" class="help" aria-label="What is error correction?" aria-describedby="eclTip">?</button>
+                <span id="eclTip" role="tooltip" class="tooltip">
+                  Lets a code still scan when part of it is dirty, damaged or covered. Higher levels are sturdier but make the code denser.
+                  <span class="tip-list">L ≈ 7% · M ≈ 15% · Q ≈ 25% · H ≈ 30%</span>
+                </span>
+              </span>
+            </legend>
+            <div class="segmented">
+              <input type="radio" name="ecl" id="ecl-L" value="L"><label for="ecl-L" title="Low: recovers ~7% damage">L</label>
+              <input type="radio" name="ecl" id="ecl-M" value="M" checked><label for="ecl-M" title="Medium: recovers ~15% damage">M</label>
+              <input type="radio" name="ecl" id="ecl-Q" value="Q"><label for="ecl-Q" title="Quartile: recovers ~25% damage">Q</label>
+              <input type="radio" name="ecl" id="ecl-H" value="H"><label for="ecl-H" title="High: recovers ~30% damage">H</label>
+            </div>
+            <p id="eclDesc" class="field-help" aria-live="polite"></p>
+          </fieldset>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- Right column: live preview + actions -->
+    <section class="preview-col" aria-labelledby="previewHeading">
+      <h2 id="previewHeading" class="visually-hidden">Preview</h2>
+      <div class="preview-frame">
+        <canvas id="qrCanvas" role="img" aria-label="QR code" hidden></canvas>
+        <div id="previewEmpty" class="preview-empty">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM18 18h3v3h-3z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <p id="previewEmptyText">Your QR code will appear here</p>
+        </div>
+      </div>
+      <p id="sizeNote" class="size-note"></p>
+
+      <div class="actions">
+        <button id="downloadPng" type="button" class="btn primary" disabled>Download PNG</button>
+        <button id="downloadSvg" type="button" class="btn" disabled>Download SVG</button>
+        <button id="copyImage" type="button" class="btn" disabled>Copy image</button>
+      </div>
+      <p id="actionStatus" class="action-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- Full width: recent history -->
+    <section class="history" aria-labelledby="historyHeading">
+      <div class="history-head">
+        <h2 id="historyHeading">Recent</h2>
+        <button id="clearHistory" type="button" class="link-btn" disabled>Clear history</button>
+      </div>
+      <ul id="historyList" class="history-list"></ul>
+      <p id="historyEmpty" class="history-empty">Codes you create will show up here (saved only in this browser).</p>
+    </section>
+  </main>
+
+  <footer class="footer">Everything runs in your browser. Nothing you type is uploaded.</footer>
+</body>
+</html>
